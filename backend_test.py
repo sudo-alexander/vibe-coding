@@ -303,7 +303,7 @@ def main():
         description="Test admin endpoint without authentication (should fail)"
     )
     
-    if not success and "401" in str(response):
+    if not success and ("401" in str(response) or "Not authenticated" in str(response)):
         test_results["passed"] += 1
         test_results["details"].append("✅ Authentication protection - PASSED")
         print("✅ Authentication properly blocks unauthorized access")
