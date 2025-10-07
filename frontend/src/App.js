@@ -6,23 +6,29 @@ import "./App.css";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Map Component using OpenStreetMap
+// Map Component using OpenStreetMap with dark theme
 const InteractiveMap = ({ places, selectedPlace, onPlaceSelect }) => {
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.L) {
-      // Initialize map
-      const map = window.L.map('map').setView([56.3287, 44.0020], 12);
+    if (typeof window !== 'undefined' && window.L && document.getElementById('map')) {
+      const map = window.L.map('map').setView([56.3287, 44.0020], 11);
       
-      // Add OpenStreetMap tiles
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+      // Dark theme tiles
+      window.L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
       }).addTo(map);
 
-      // Add markers for places
+      // Custom orange marker icon
+      const orangeIcon = window.L.divIcon({
+        className: 'custom-div-icon',
+        html: '<div class="marker-pin" style="background-color: #ff6b35; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; position: relative; transform: rotate(-45deg); border: 2px solid #ff8c42;"><div style="width: 10px; height: 10px; background-color: #ffffff; border-radius: 50%; position: absolute; top: 8px; left: 8px; transform: rotate(45deg);"></div></div>',
+        iconSize: [30, 42],
+        iconAnchor: [15, 42]
+      });
+
       places.forEach(place => {
-        const marker = window.L.marker([place.latitude, place.longitude])
+        const marker = window.L.marker([place.latitude, place.longitude], { icon: orangeIcon })
           .addTo(map)
-          .bindPopup(`<b>${place.name}</b><br>${place.description}`)
+          .bindPopup(`<div style="color: #1a1a1a;"><b>${place.name}</b><br/>${place.description}</div>`)
           .on('click', () => onPlaceSelect(place));
         
         if (selectedPlace && selectedPlace.id === place.id) {
@@ -36,10 +42,10 @@ const InteractiveMap = ({ places, selectedPlace, onPlaceSelect }) => {
     }
   }, [places, selectedPlace, onPlaceSelect]);
 
-  return <div id="map" className="w-full h-96 rounded-lg shadow-lg"></div>;
+  return <div id="map" className="w-full h-96 rounded-lg shadow-2xl border border-orange-500/20"></div>;
 };
 
-// Navigation Component
+// Navigation Component with dark theme
 const Navigation = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,31 +61,31 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="bg-blue-900 shadow-lg sticky top-0 z-50">
+    <nav className="bg-gray-900 border-b border-orange-500/20 shadow-xl sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
-                <span className="text-blue-900 font-bold text-xl">НН</span>
+            <Link to="/" className="flex items-center space-x-3 hover:scale-105 transition-transform">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-black font-bold text-xl">НО</span>
               </div>
               <span className="text-white font-bold text-xl">Нижегородская область</span>
             </Link>
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
                   location.pathname === item.path
-                    ? 'bg-blue-700 text-yellow-300'
-                    : 'text-white hover:bg-blue-700 hover:text-yellow-300'
+                    ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/25'
+                    : 'text-gray-300 hover:bg-orange-500/10 hover:text-orange-400 border border-transparent hover:border-orange-500/20'
                 }`}
               >
-                <span className="mr-1">{item.icon}</span>
+                <span className="mr-2">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
@@ -89,7 +95,7 @@ const Navigation = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-white hover:text-yellow-300"
+              className="text-gray-300 hover:text-orange-400 transition-colors"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -101,16 +107,16 @@ const Navigation = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden border-t border-orange-500/20">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
                     location.pathname === item.path
-                      ? 'bg-blue-700 text-yellow-300'
-                      : 'text-white hover:bg-blue-700 hover:text-yellow-300'
+                      ? 'bg-orange-500 text-black'
+                      : 'text-gray-300 hover:bg-orange-500/10 hover:text-orange-400'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -126,7 +132,7 @@ const Navigation = () => {
   );
 };
 
-// Home Page
+// Home Page with dark theme
 const HomePage = () => {
   const [places, setPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
@@ -145,39 +151,58 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-blue-900 text-white">
-        <div className="absolute inset-0 bg-black opacity-50"></div>
-        <div className="relative max-w-7xl mx-auto py-24 px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6 animate-fade-in">
-            Добро пожаловать в Нижегородскую область
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      {/* Hero Section with dark theme */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5"></div>
+        <div className="relative max-w-7xl mx-auto py-32 px-4 text-center">
+          <h1 className="text-6xl font-bold mb-8 bg-gradient-to-r from-orange-400 via-orange-300 to-orange-500 bg-clip-text text-transparent animate-fade-in">
+            Нижегородская область
           </h1>
-          <p className="text-xl mb-8 max-w-3xl mx-auto animate-fade-in-delay">
-            Откройте для себя богатую историю, уникальную культуру и захватывающие дух 
-            достопримечательности нашего прекрасного региона на берегах великой Волги.
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-8 rounded-full"></div>
+          <p className="text-xl mb-12 max-w-4xl mx-auto text-gray-300 leading-relaxed animate-fade-in-delay">
+            Откройте богатейшую историю древнего края, где река Волга встречается с Окой. 
+            Погрузитесь в мир легендарных народных промыслов - хохломской и городецкой росписи, 
+            семёновских матрёшек. Исследуйте величественный Нижегородский кремль XVI века, 
+            прогуляйтесь по историческим городам и насладитесь природными красотами Поволжья.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link to="/attractions" 
-                  className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 px-8 py-3 rounded-lg font-semibold transition-colors">
-              Исследовать достопримечательности
+                  className="group bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-black px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-orange-500/25">
+              <span className="flex items-center justify-center">
+                🗺️ Исследовать достопримечательности
+                <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </span>
             </Link>
             <Link to="/history" 
-                  className="border-2 border-white hover:bg-white hover:text-blue-900 px-8 py-3 rounded-lg font-semibold transition-colors">
-              Узнать историю
+                  className="group border-2 border-orange-500 hover:bg-orange-500/10 text-orange-400 hover:text-orange-300 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105">
+              <span className="flex items-center justify-center">
+                📜 Узнать историю
+                <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Interactive Map Section */}
-      <div className="max-w-7xl mx-auto py-16 px-4">
-        <h2 className="text-3xl font-bold text-center mb-8 text-blue-900">
-          Интерактивная карта достопримечательностей
-        </h2>
-        <p className="text-center mb-8 text-gray-600 max-w-2xl mx-auto">
-          Кликните на маркеры карты, чтобы узнать больше о знаменитых местах Нижегородской области
-        </p>
+      <div className="max-w-7xl mx-auto py-20 px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4 text-white">
+            Интерактивная карта региона
+          </h2>
+          <div className="h-1 w-24 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 max-w-3xl mx-auto text-lg leading-relaxed">
+            Исследуйте знаменитые места Нижегородской области на интерактивной карте. 
+            Нажимайте на оранжевые маркеры, чтобы узнать подробности о исторических памятниках, 
+            городах народных промыслов и природных достопримечательностях.
+          </p>
+        </div>
+        
         <InteractiveMap 
           places={places} 
           selectedPlace={selectedPlace} 
@@ -185,42 +210,61 @@ const HomePage = () => {
         />
         
         {selectedPlace && (
-          <div className="mt-8 p-6 bg-white rounded-lg shadow-lg">
-            <h3 className="text-2xl font-bold mb-4 text-blue-900">{selectedPlace.name}</h3>
-            <p className="text-gray-700 mb-4">{selectedPlace.description}</p>
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-              {selectedPlace.category}
-            </span>
+          <div className="mt-8 p-8 bg-gray-800/50 rounded-xl shadow-2xl border border-orange-500/20 backdrop-blur-sm">
+            <h3 className="text-3xl font-bold mb-4 text-orange-400">{selectedPlace.name}</h3>
+            <p className="text-gray-300 mb-6 text-lg leading-relaxed">{selectedPlace.description}</p>
+            <div className="flex items-center space-x-4">
+              <span className="inline-flex items-center px-4 py-2 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
+                <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
+                {selectedPlace.category === 'kremlin' ? 'Кремль' :
+                 selectedPlace.category === 'museum' ? 'Музей' :
+                 selectedPlace.category === 'nature' ? 'Природа' :
+                 selectedPlace.category === 'architecture' ? 'Архитектура' :
+                 selectedPlace.category === 'city' ? 'Город' : selectedPlace.category}
+              </span>
+              <span className="text-gray-500 text-sm">
+                📍 {selectedPlace.latitude.toFixed(4)}, {selectedPlace.longitude.toFixed(4)}
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {/* Features Section */}
-      <div className="bg-gray-50 py-16">
+      <div className="bg-gray-900/50 py-20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-blue-900">
-            Что вас ждет в нашем регионе
-          </h2>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 text-white">
+              Сокровища Нижегородской области
+            </h2>
+            <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto rounded-full"></div>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🏰</div>
-              <h3 className="text-xl font-semibold mb-3 text-blue-900">Историческое наследие</h3>
-              <p className="text-gray-600">
-                800 лет истории, древние крепости, уникальная архитектура и памятники культуры
+            <div className="group text-center p-8 bg-gray-800/30 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm">
+              <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">🏰</div>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">Историческое наследие</h3>
+              <p className="text-gray-400 leading-relaxed">
+                800-летняя история региона воплощена в величественном Нижегородском кремле XVI века, 
+                древних городах и архитектурных памятниках разных эпох
               </p>
             </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🎨</div>
-              <h3 className="text-xl font-semibold mb-3 text-blue-900">Народные промыслы</h3>
-              <p className="text-gray-600">
-                Знаменитая хохломская роспись, городецкие узоры и другие традиционные ремесла
+            
+            <div className="group text-center p-8 bg-gray-800/30 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm">
+              <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">🎨</div>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">Народные промыслы</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Мировая слава хохломской росписи, городецких узоров и семёновских матрёшек. 
+                Живые традиции мастерства, передающиеся из поколения в поколение
               </p>
             </div>
-            <div className="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-4xl mb-4">🌊</div>
-              <h3 className="text-xl font-semibold mb-3 text-blue-900">Природные красоты</h3>
-              <p className="text-gray-600">
-                Великая Волга, живописные леса, озера и заповедники для отдыха и экотуризма
+            
+            <div className="group text-center p-8 bg-gray-800/30 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm">
+              <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">🌊</div>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">Природные сокровища</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Слияние великих рек Волги и Оки, загадочное озеро Светлояр, 
+                девственные леса Керженского заповедника и уникальные ландшафты Поволжья
               </p>
             </div>
           </div>
@@ -230,7 +274,7 @@ const HomePage = () => {
   );
 };
 
-// History Page
+// History Page with dark theme
 const HistoryPage = () => {
   const [historyEvents, setHistoryEvents] = useState([]);
 
@@ -248,24 +292,36 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-900">История Нижегородской области</h1>
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            История Нижегородской области
+          </h1>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+            От основания в 1221 году до современности - восемь веков богатейшей истории русского края
+          </p>
+        </div>
         
         <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-300"></div>
+          <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 via-orange-400 to-orange-500 rounded-full"></div>
           
           {historyEvents.map((event, index) => (
-            <div key={event.id} className="relative mb-8 ml-12">
-              <div className="absolute -left-10 w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow"></div>
-              <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <div className="flex items-center mb-3">
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+            <div key={event.id} className="relative mb-12 ml-16">
+              <div className="absolute -left-11 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full border-4 border-gray-900 shadow-xl flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
+              <div className="group bg-gray-800/40 p-8 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm">
+                <div className="flex items-center mb-4">
+                  <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                     {event.year} год
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-blue-900">{event.title}</h3>
-                <p className="text-gray-700">{event.description}</p>
+                <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
+                  {event.title}
+                </h3>
+                <p className="text-gray-300 leading-relaxed text-lg">{event.description}</p>
               </div>
             </div>
           ))}
@@ -275,7 +331,7 @@ const HistoryPage = () => {
   );
 };
 
-// Culture Page
+// Culture Page with dark theme
 const CulturePage = () => {
   const [cultureItems, setCultureItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -294,11 +350,10 @@ const CulturePage = () => {
   };
 
   const categories = [
-    { value: 'all', label: 'Все категории' },
-    { value: 'craft', label: 'Ремесла' },
-    { value: 'cuisine', label: 'Кухня' },
-    { value: 'costume', label: 'Костюмы' },
-    { value: 'festival', label: 'Фестивали' }
+    { value: 'all', label: 'Все категории', icon: '🎭' },
+    { value: 'craft', label: 'Ремёсла', icon: '🎨' },
+    { value: 'tradition', label: 'Традиции', icon: '🏛️' },
+    { value: 'nature', label: 'Природа', icon: '🌿' }
   ];
 
   const filteredItems = selectedCategory === 'all' 
@@ -306,51 +361,69 @@ const CulturePage = () => {
     : cultureItems.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-900">
-          Культура и традиции
-        </h1>
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Культура и традиции
+          </h1>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+            Богатейшее наследие народных промыслов и традиций Нижегородской области
+          </p>
+        </div>
         
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map(category => (
             <button
               key={category.value}
               onClick={() => setSelectedCategory(category.value)}
-              className={`px-4 py-2 rounded-full transition-colors ${
+              className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                 selectedCategory === category.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-blue-600 hover:bg-blue-100'
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-black shadow-xl transform scale-105'
+                  : 'bg-gray-800/50 text-gray-300 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-400'
               }`}
             >
+              <span className="mr-2">{category.icon}</span>
               {category.label}
             </button>
           ))}
         </div>
 
         {/* Culture Items Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredItems.map(item => (
-            <div key={item.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                <div className="flex items-center mb-3">
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
-                    {item.category}
+            <div key={item.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm overflow-hidden">
+              <div className="p-8">
+                <div className="flex items-center mb-4">
+                  <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
+                    <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
+                    {item.category === 'craft' ? 'Ремесло' :
+                     item.category === 'tradition' ? 'Традиция' :
+                     item.category === 'nature' ? 'Природа' : item.category}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-blue-900">{item.title}</h3>
-                <p className="text-gray-700">{item.description}</p>
+                <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-gray-300 leading-relaxed">{item.description}</p>
               </div>
             </div>
           ))}
         </div>
+
+        {filteredItems.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-xl">Элементы культуры в данной категории будут добавлены в ближайшее время.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Attractions Page
+// Attractions Page with dark theme
 const AttractionsPage = () => {
   const [places, setPlaces] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -369,11 +442,12 @@ const AttractionsPage = () => {
   };
 
   const categories = [
-    { value: 'all', label: 'Все категории' },
-    { value: 'kremlin', label: 'Кремль' },
-    { value: 'museum', label: 'Музеи' },
-    { value: 'nature', label: 'Природа' },
-    { value: 'architecture', label: 'Архитектура' }
+    { value: 'all', label: 'Все категории', icon: '🗺️' },
+    { value: 'kremlin', label: 'Кремль', icon: '🏰' },
+    { value: 'museum', label: 'Музеи', icon: '🏛️' },
+    { value: 'nature', label: 'Природа', icon: '🌊' },
+    { value: 'architecture', label: 'Архитектура', icon: '🏗️' },
+    { value: 'city', label: 'Города', icon: '🏘️' }
   ];
 
   const filteredPlaces = selectedCategory === 'all' 
@@ -381,54 +455,75 @@ const AttractionsPage = () => {
     : places.filter(place => place.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-900">
-          Достопримечательности
-        </h1>
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Достопримечательности
+          </h1>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+            Откройте знаменитые места и скрытые жемчужины Нижегородской области
+          </p>
+        </div>
         
         {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map(category => (
             <button
               key={category.value}
               onClick={() => setSelectedCategory(category.value)}
-              className={`px-4 py-2 rounded-full transition-colors ${
+              className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                 selectedCategory === category.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-blue-600 hover:bg-blue-100'
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-black shadow-xl transform scale-105'
+                  : 'bg-gray-800/50 text-gray-300 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-400'
               }`}
             >
+              <span className="mr-2">{category.icon}</span>
               {category.label}
             </button>
           ))}
         </div>
 
         {/* Places Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredPlaces.map(place => (
-            <div key={place.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="p-6">
-                <div className="flex items-center mb-3">
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                    {place.category}
+            <div key={place.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm overflow-hidden">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
+                    <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
+                    {place.category === 'kremlin' ? 'Кремль' :
+                     place.category === 'museum' ? 'Музей' :
+                     place.category === 'nature' ? 'Природа' :
+                     place.category === 'architecture' ? 'Архитектура' :
+                     place.category === 'city' ? 'Город' : place.category}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-blue-900">{place.name}</h3>
-                <p className="text-gray-700 mb-4">{place.description}</p>
-                <div className="text-sm text-gray-500">
-                  📍 {place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}
+                <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
+                  {place.name}
+                </h3>
+                <p className="text-gray-300 mb-6 leading-relaxed">{place.description}</p>
+                <div className="text-sm text-gray-500 flex items-center">
+                  <span className="mr-2">📍</span>
+                  {place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        {filteredPlaces.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-xl">Места в данной категории будут добавлены в ближайшее время.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Events Page
+// Events Page with dark theme
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
 
@@ -446,29 +541,40 @@ const EventsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-900">
-          События и маршруты
-        </h1>
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            События и маршруты
+          </h1>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+            Актуальные события и рекомендуемые туристические маршруты по области
+          </p>
+        </div>
         
-        <div className="grid gap-6">
+        <div className="space-y-8">
           {events.map(event => (
-            <div key={event.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6">
+            <div key={event.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm p-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center mb-2">
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-2">
+                  <div className="flex items-center mb-3 space-x-3">
+                    <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
+                      <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
                       {event.category}
                     </span>
-                    <span className="text-gray-500 text-sm">
-                      📅 {new Date(event.date).toLocaleDateString('ru-RU')}
+                    <span className="text-gray-400 text-sm flex items-center">
+                      <span className="mr-1">📅</span>
+                      {new Date(event.date).toLocaleDateString('ru-RU')}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-blue-900">{event.title}</h3>
-                  <p className="text-gray-700 mb-2">{event.description}</p>
-                  <div className="text-sm text-gray-500">
-                    📍 {event.location}
+                  <h3 className="text-2xl font-bold mb-3 text-orange-400 group-hover:text-orange-300 transition-colors">
+                    {event.title}
+                  </h3>
+                  <p className="text-gray-300 mb-4 leading-relaxed">{event.description}</p>
+                  <div className="text-sm text-gray-500 flex items-center">
+                    <span className="mr-2">📍</span>
+                    {event.location}
                   </div>
                 </div>
               </div>
@@ -477,8 +583,15 @@ const EventsPage = () => {
         </div>
 
         {events.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">События будут добавлены в ближайшее время.</p>
+          <div className="text-center py-16">
+            <div className="bg-gray-800/40 rounded-2xl border border-orange-500/20 p-12 backdrop-blur-sm">
+              <div className="text-6xl mb-6">📅</div>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">События скоро появятся</h3>
+              <p className="text-gray-400 text-lg">
+                Мы работаем над наполнением календаря культурных событий и туристических маршрутов.
+                Следите за обновлениями!
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -486,7 +599,7 @@ const EventsPage = () => {
   );
 };
 
-// Contact Page
+// Contact Page with dark theme
 const ContactPage = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -519,17 +632,25 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-900">Контакты</h1>
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Контакты
+          </h1>
+          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+            Свяжитесь с нами для получения туристической информации о Нижегородской области
+          </p>
+        </div>
         
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4 text-blue-900">Свяжитесь с нами</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+          <div className="bg-gray-800/40 rounded-2xl border border-orange-500/20 backdrop-blur-sm p-8">
+            <h2 className="text-3xl font-bold mb-6 text-orange-400">Свяжитесь с нами</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-3">
                   Имя *
                 </label>
                 <input
@@ -538,11 +659,11 @@ const ContactPage = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-orange-500/20 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 text-white transition-all duration-200"
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-3">
                   Email *
                 </label>
                 <input
@@ -551,11 +672,11 @@ const ContactPage = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-orange-500/20 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 text-white transition-all duration-200"
                 />
               </div>
-              <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+              <div>
+                <label className="block text-gray-300 text-sm font-bold mb-3">
                   Сообщение *
                 </label>
                 <textarea
@@ -563,54 +684,76 @@ const ContactPage = () => {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
-                  rows="4"
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                  rows="5"
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-orange-500/20 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 text-white transition-all duration-200 resize-none"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-black font-bold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Отправка...' : 'Отправить сообщение'}
               </button>
             </form>
             
             {submitMessage && (
-              <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg">
+              <div className={`mt-6 p-4 rounded-lg ${
+                submitMessage.includes('Спасибо') 
+                  ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+              }`}>
                 {submitMessage}
               </div>
             )}
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4 text-blue-900">Информация для связи</h2>
+          <div className="bg-gray-800/40 rounded-2xl border border-orange-500/20 backdrop-blur-sm p-8">
+            <h2 className="text-3xl font-bold mb-6 text-orange-400">Туристическая информация</h2>
             
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-800">Адрес:</h3>
-                <p className="text-gray-600">
-                  г. Нижний Новгород<br />
-                  Нижегородская область<br />
-                  Россия
-                </p>
+            <div className="space-y-8">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-orange-400 text-xl">📍</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-300 mb-2">Административный центр:</h3>
+                  <p className="text-gray-400">
+                    г. Нижний Новгород<br />
+                    Нижегородская область<br />
+                    Российская Федерация
+                  </p>
+                </div>
               </div>
               
-              <div>
-                <h3 className="font-semibold text-gray-800">Время работы:</h3>
-                <p className="text-gray-600">
-                  Понедельник - Пятница: 9:00 - 18:00<br />
-                  Суббота - Воскресенье: 10:00 - 16:00
-                </p>
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-orange-400 text-xl">🕒</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-300 mb-2">Туристические центры:</h3>
+                  <p className="text-gray-400">
+                    Пн-Пт: 9:00 - 18:00<br />
+                    Сб-Вс: 10:00 - 16:00<br />
+                    Музеи работают по собственному расписанию
+                  </p>
+                </div>
               </div>
               
-              <div>
-                <h3 className="font-semibold text-gray-800">Туристические маршруты:</h3>
-                <p className="text-gray-600">
-                  Мы организуем экскурсии по историческим местам,<br />
-                  знакомим с народными промыслами и культурными традициями региона.
-                </p>
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-orange-400 text-xl">🎯</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-300 mb-2">Основные направления:</h3>
+                  <p className="text-gray-400">
+                    • Культурно-исторический туризм<br />
+                    • Экскурсии по народным промыслам<br />
+                    • Речные круизы по Волге<br />
+                    • Экологический туризм
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -620,11 +763,11 @@ const ContactPage = () => {
   );
 };
 
-// Basic Admin Panel
+// Admin Page with dark theme
 const AdminPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [activeTab, setActiveTab] = useState('places');
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -636,56 +779,78 @@ const AdminPage = () => {
   };
 
   const initializeData = async () => {
+    setIsInitializing(true);
     try {
       const auth = btoa('admin:admin123');
       await axios.post(`${API}/init-data`, {}, {
         headers: { 'Authorization': `Basic ${auth}` }
       });
-      alert('Данные инициализированы успешно!');
+      alert('Обновлённые данные успешно загружены!');
     } catch (error) {
       console.error('Error initializing data:', error);
       alert('Ошибка при инициализации данных');
+    }
+    setIsInitializing(false);
+  };
+
+  const clearData = async () => {
+    if (window.confirm('Вы уверены, что хотите очистить все данные?')) {
+      try {
+        const auth = btoa('admin:admin123');
+        await axios.post(`${API}/clear-data`, {}, {
+          headers: { 'Authorization': `Basic ${auth}` }
+        });
+        alert('Все данные очищены!');
+      } catch (error) {
+        console.error('Error clearing data:', error);
+        alert('Ошибка при очистке данных');
+      }
     }
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md w-96">
-          <h1 className="text-2xl font-bold mb-6 text-center text-blue-900">Вход в админ панель</h1>
-          <form onSubmit={handleLogin}>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center px-4">
+        <div className="bg-gray-800/40 backdrop-blur-sm p-10 rounded-2xl border border-orange-500/20 w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-4 text-orange-400">Админ панель</h1>
+            <div className="h-1 w-16 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto rounded-full"></div>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-gray-300 text-sm font-bold mb-3">
                 Имя пользователя
               </label>
               <input
                 type="text"
                 value={credentials.username}
                 onChange={(e) => setCredentials({...credentials, username: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-3 bg-gray-900/50 border border-orange-500/20 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 text-white transition-all duration-200"
                 required
               />
             </div>
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+            <div>
+              <label className="block text-gray-300 text-sm font-bold mb-3">
                 Пароль
               </label>
               <input
                 type="password"
                 value={credentials.password}
                 onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-3 bg-gray-900/50 border border-orange-500/20 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/25 text-white transition-all duration-200"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-black font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl"
             >
               Войти
             </button>
           </form>
-          <p className="text-sm text-gray-600 text-center mt-4">
+          
+          <p className="text-sm text-gray-500 text-center mt-6">
             По умолчанию: admin / admin123
           </p>
         </div>
@@ -694,34 +859,65 @@ const AdminPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-900">Админ панель</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-4xl font-bold text-orange-400 mb-2">Панель администратора</h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full"></div>
+          </div>
           <button
             onClick={() => setIsAuthenticated(false)}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50 px-6 py-3 rounded-lg transition-all duration-200"
           >
             Выйти
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="mb-6">
-            <button
-              onClick={initializeData}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
-            >
-              Инициализировать тестовые данные
-            </button>
-            <p className="text-sm text-gray-600 mt-2">
-              Загрузить образцы мест, истории и культурных элементов
-            </p>
+        <div className="grid gap-8">
+          <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl border border-orange-500/20 p-8">
+            <h2 className="text-2xl font-bold text-orange-400 mb-6">Управление данными</h2>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-300">Инициализация данных</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Загрузить обновлённые данные о достопримечательностях, истории и культуре 
+                  Нижегородской области на основе проверенной информации из Википедии.
+                </p>
+                <button
+                  onClick={initializeData}
+                  disabled={isInitializing}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-black font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl disabled:opacity-50"
+                >
+                  {isInitializing ? 'Загрузка...' : 'Обновить данные'}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-300">Очистка данных</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Удалить все существующие данные из базы. Используйте эту функцию 
+                  с осторожностью - действие необратимо.
+                </p>
+                <button
+                  onClick={clearData}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl"
+                >
+                  Очистить все данные
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="text-center text-gray-600">
-            <p>Расширенные функции управления содержимым будут добавлены в следующих версиях.</p>
-            <p className="mt-2">Сейчас вы можете инициализировать тестовые данные для сайта.</p>
+          <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl border border-orange-500/20 p-8">
+            <h2 className="text-2xl font-bold text-orange-400 mb-4">Информация о системе</h2>
+            <div className="text-gray-300 space-y-2">
+              <p>• Тёмная тема с оранжевыми акцентами активна</p>
+              <p>• Интерактивная карта с OpenStreetMap (тёмная тема)</p>
+              <p>• База данных содержит достоверную информацию из Википедии</p>
+              <p>• Все секции сайта адаптированы под новый дизайн</p>
+            </div>
           </div>
         </div>
       </div>
@@ -732,7 +928,7 @@ const AdminPage = () => {
 // Main App Component
 function App() {
   useEffect(() => {
-    // Load Leaflet CSS and JS
+    // Load Leaflet CSS and JS for dark theme map
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
