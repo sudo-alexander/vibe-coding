@@ -13,7 +13,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Animations */
+/* Enhanced Custom Animations */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -36,6 +36,28 @@ body {
   }
 }
 
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes glow {
   0%, 100% {
     box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
@@ -54,6 +76,41 @@ body {
   }
 }
 
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05) rotate(-45deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-45deg);
+  }
+  100% {
+    transform: scale(1) rotate(-45deg);
+    opacity: 1;
+  }
+}
+
+@keyframes timeline-draw {
+  from {
+    height: 0;
+  }
+  to {
+    height: 100%;
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 1s ease-out;
 }
@@ -62,12 +119,69 @@ body {
   animation: fade-in-delay 1.2s ease-out 0.4s backwards;
 }
 
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.7s ease-out;
+}
+
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
 }
 
 .animate-pulse-orange {
   animation: pulse-orange 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.8s ease-out;
+}
+
+.animate-timeline-draw {
+  animation: timeline-draw 2s ease-out;
+}
+
+/* Enhanced History Timeline Animations */
+.history-timeline-container {
+  position: relative;
+}
+
+.history-timeline-line {
+  position: absolute;
+  left: 2rem;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, #ff6b35, #ff8c42, #ff6b35);
+  border-radius: 2px;
+  animation: timeline-draw 2s ease-out;
+}
+
+.history-event-card {
+  opacity: 0;
+  transform: translateX(30px);
+  animation: slide-in-right 0.7s ease-out forwards;
+}
+
+.history-event-card:nth-child(1) { animation-delay: 0.1s; }
+.history-event-card:nth-child(2) { animation-delay: 0.2s; }
+.history-event-card:nth-child(3) { animation-delay: 0.3s; }
+.history-event-card:nth-child(4) { animation-delay: 0.4s; }
+.history-event-card:nth-child(5) { animation-delay: 0.5s; }
+.history-event-card:nth-child(6) { animation-delay: 0.6s; }
+.history-event-card:nth-child(7) { animation-delay: 0.7s; }
+.history-event-card:nth-child(8) { animation-delay: 0.8s; }
+.history-event-card:nth-child(9) { animation-delay: 0.9s; }
+.history-event-card:nth-child(10) { animation-delay: 1.0s; }
+
+.history-event-marker {
+  animation: bounce-in 0.8s ease-out;
 }
 
 /* Map container with dark theme */
@@ -87,6 +201,7 @@ body {
 
 .marker-pin {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  animation: bounce-in 1s ease-out;
 }
 
 /* Leaflet popup customization for dark theme */
@@ -243,7 +358,7 @@ select:focus {
   box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
 }
 
-/* Loading states */
+/* Enhanced Loading states */
 .loading {
   opacity: 0.7;
   pointer-events: none;
@@ -267,6 +382,31 @@ select:focus {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Staggered Animation for Grid Items */
+.grid > div:nth-child(1) { animation-delay: 0.1s; }
+.grid > div:nth-child(2) { animation-delay: 0.2s; }
+.grid > div:nth-child(3) { animation-delay: 0.3s; }
+.grid > div:nth-child(4) { animation-delay: 0.4s; }
+.grid > div:nth-child(5) { animation-delay: 0.5s; }
+.grid > div:nth-child(6) { animation-delay: 0.6s; }
+.grid > div:nth-child(7) { animation-delay: 0.7s; }
+.grid > div:nth-child(8) { animation-delay: 0.8s; }
+.grid > div:nth-child(9) { animation-delay: 0.9s; }
+
+/* Card entrance animation */
+.card-entrance {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  animation: card-entrance 0.6s ease-out forwards;
+}
+
+@keyframes card-entrance {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Mobile optimizations */
@@ -302,6 +442,15 @@ select:focus {
 
   .text-xl {
     font-size: 1.125rem;
+  }
+
+  /* Reduce animation intensity on mobile */
+  .animate-bounce-in {
+    animation-duration: 0.5s;
+  }
+
+  .animate-slide-in-right {
+    animation-duration: 0.4s;
   }
 }
 
@@ -355,8 +504,13 @@ select:focus {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-delay,
+  .animate-slide-up,
+  .animate-slide-in-right,
   .animate-glow,
-  .animate-pulse-orange {
+  .animate-pulse-orange,
+  .animate-pulse-slow,
+  .animate-bounce-in,
+  .animate-timeline-draw {
     animation: none;
   }
   
@@ -427,4 +581,26 @@ select:focus {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Image styling */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Responsive image containers */
+.image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.image-container img {
+  transition: transform 0.3s ease;
+}
+
+.image-container:hover img {
+  transform: scale(1.05);
 }

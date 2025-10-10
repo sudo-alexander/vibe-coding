@@ -10,7 +10,7 @@ const API = `${BACKEND_URL}/api`;
 const InteractiveMap = ({ places, selectedPlace, onPlaceSelect }) => {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.L && document.getElementById('map')) {
-      const map = window.L.map('map').setView([56.3287, 44.0020], 11);
+      const map = window.L.map('map').setView([56.3287, 44.0020], 10);
       
       // Dark theme tiles
       window.L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
@@ -45,7 +45,7 @@ const InteractiveMap = ({ places, selectedPlace, onPlaceSelect }) => {
   return <div id="map" className="w-full h-96 rounded-lg shadow-2xl border border-orange-500/20"></div>;
 };
 
-// Navigation Component with dark theme
+// Navigation Component with dark theme (removed Events)
 const Navigation = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -53,9 +53,7 @@ const Navigation = () => {
   const navItems = [
     { path: "/", label: "Главная", icon: "🏠" },
     { path: "/history", label: "История", icon: "📚" },
-    { path: "/culture", label: "Культура и традиции", icon: "🎨" },
     { path: "/attractions", label: "Достопримечательности", icon: "🏛️" },
-    { path: "/events", label: "События и маршруты", icon: "📅" },
     { path: "/contacts", label: "Контакты", icon: "📧" },
     { path: "/admin", label: "Админ", icon: "⚙️" }
   ];
@@ -213,6 +211,13 @@ const HomePage = () => {
           <div className="mt-8 p-8 bg-gray-800/50 rounded-xl shadow-2xl border border-orange-500/20 backdrop-blur-sm">
             <h3 className="text-3xl font-bold mb-4 text-orange-400">{selectedPlace.name}</h3>
             <p className="text-gray-300 mb-6 text-lg leading-relaxed">{selectedPlace.description}</p>
+            {selectedPlace.image_url && (
+              <img 
+                src={selectedPlace.image_url} 
+                alt={selectedPlace.name}
+                className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-4"
+              />
+            )}
             <div className="flex items-center space-x-4">
               <span className="inline-flex items-center px-4 py-2 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
                 <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
@@ -220,6 +225,7 @@ const HomePage = () => {
                  selectedPlace.category === 'museum' ? 'Музей' :
                  selectedPlace.category === 'nature' ? 'Природа' :
                  selectedPlace.category === 'architecture' ? 'Архитектура' :
+                 selectedPlace.category === 'monastery' ? 'Монастырь' :
                  selectedPlace.category === 'city' ? 'Город' : selectedPlace.category}
               </span>
               <span className="text-gray-500 text-sm">
@@ -274,18 +280,29 @@ const HomePage = () => {
   );
 };
 
-// History Page with dark theme
+// History Page with animated timeline cards
 const HistoryPage = () => {
   const [historyEvents, setHistoryEvents] = useState([]);
+  const [visibleEvents, setVisibleEvents] = useState([]);
 
   useEffect(() => {
     fetchHistory();
   }, []);
 
+  useEffect(() => {
+    // Animate cards appearing one by one
+    historyEvents.forEach((event, index) => {
+      setTimeout(() => {
+        setVisibleEvents(prev => [...prev, event]);
+      }, index * 200);
+    });
+  }, [historyEvents]);
+
   const fetchHistory = async () => {
     try {
       const response = await axios.get(`${API}/history`);
       setHistoryEvents(response.data);
+      setVisibleEvents([]); // Reset visible events
     } catch (error) {
       console.error('Error fetching history:', error);
     }
@@ -295,7 +312,7 @@ const HistoryPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent animate-fade-in">
             История Нижегородской области
           </h1>
           <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
@@ -307,129 +324,49 @@ const HistoryPage = () => {
         <div className="relative">
           <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 via-orange-400 to-orange-500 rounded-full"></div>
           
-          {historyEvents.map((event, index) => (
-            <div key={event.id} className="relative mb-12 ml-16">
-              <div className="absolute -left-11 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full border-4 border-gray-900 shadow-xl flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-              <div className="group bg-gray-800/40 p-8 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-center mb-4">
-                  <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                    {event.year} год
-                  </span>
+          {historyEvents.map((event, index) => {
+            const isVisible = visibleEvents.some(ve => ve.id === event.id);
+            return (
+              <div 
+                key={event.id} 
+                className={`relative mb-12 ml-16 transition-all duration-700 ${
+                  isVisible 
+                    ? 'opacity-100 transform translate-x-0' 
+                    : 'opacity-0 transform translate-x-8'
+                }`}
+              >
+                <div className="absolute -left-11 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full border-4 border-gray-900 shadow-xl flex items-center justify-center animate-pulse-slow">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
-                  {event.title}
-                </h3>
-                <p className="text-gray-300 leading-relaxed text-lg">{event.description}</p>
+                <div className="group bg-gray-800/40 p-8 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm animate-slide-up">
+                  <div className="flex items-center mb-4">
+                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                      {event.year}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
+                    {event.title}
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed text-lg">{event.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
   );
 };
 
-// Culture Page with dark theme
-const CulturePage = () => {
+// Combined Attractions Page (includes culture and attractions)
+const AttractionsPage = () => {
+  const [places, setPlaces] = useState([]);
   const [cultureItems, setCultureItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    fetchCulture();
-  }, []);
-
-  const fetchCulture = async () => {
-    try {
-      const response = await axios.get(`${API}/culture`);
-      setCultureItems(response.data);
-    } catch (error) {
-      console.error('Error fetching culture items:', error);
-    }
-  };
-
-  const categories = [
-    { value: 'all', label: 'Все категории', icon: '🎭' },
-    { value: 'craft', label: 'Ремёсла', icon: '🎨' },
-    { value: 'tradition', label: 'Традиции', icon: '🏛️' },
-    { value: 'nature', label: 'Природа', icon: '🌿' }
-  ];
-
-  const filteredItems = selectedCategory === 'all' 
-    ? cultureItems 
-    : cultureItems.filter(item => item.category === selectedCategory);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-            Культура и традиции
-          </h1>
-          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
-          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
-            Богатейшее наследие народных промыслов и традиций Нижегородской области
-          </p>
-        </div>
-        
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          {categories.map(category => (
-            <button
-              key={category.value}
-              onClick={() => setSelectedCategory(category.value)}
-              className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                selectedCategory === category.value
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-black shadow-xl transform scale-105'
-                  : 'bg-gray-800/50 text-gray-300 border border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-400'
-              }`}
-            >
-              <span className="mr-2">{category.icon}</span>
-              {category.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Culture Items Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredItems.map(item => (
-            <div key={item.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm overflow-hidden">
-              <div className="p-8">
-                <div className="flex items-center mb-4">
-                  <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
-                    <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
-                    {item.category === 'craft' ? 'Ремесло' :
-                     item.category === 'tradition' ? 'Традиция' :
-                     item.category === 'nature' ? 'Природа' : item.category}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-gray-300 leading-relaxed">{item.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredItems.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-xl">Элементы культуры в данной категории будут добавлены в ближайшее время.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Attractions Page with dark theme
-const AttractionsPage = () => {
-  const [places, setPlaces] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-
-  useEffect(() => {
     fetchPlaces();
+    fetchCulture();
   }, []);
 
   const fetchPlaces = async () => {
@@ -441,29 +378,44 @@ const AttractionsPage = () => {
     }
   };
 
+  const fetchCulture = async () => {
+    try {
+      const response = await axios.get(`${API}/culture`);
+      setCultureItems(response.data);
+    } catch (error) {
+      console.error('Error fetching culture items:', error);
+    }
+  };
+
   const categories = [
     { value: 'all', label: 'Все категории', icon: '🗺️' },
-    { value: 'kremlin', label: 'Кремль', icon: '🏰' },
-    { value: 'museum', label: 'Музеи', icon: '🏛️' },
-    { value: 'nature', label: 'Природа', icon: '🌊' },
-    { value: 'architecture', label: 'Архитектура', icon: '🏗️' },
-    { value: 'city', label: 'Города', icon: '🏘️' }
+    { value: 'places', label: 'Места', icon: '🏛️' },
+    { value: 'culture', label: 'Культура и традиции', icon: '🎨' }
   ];
 
-  const filteredPlaces = selectedCategory === 'all' 
-    ? places 
-    : places.filter(place => place.category === selectedCategory);
+  const getFilteredItems = () => {
+    if (selectedCategory === 'all') {
+      return [...places.map(p => ({...p, type: 'place'})), ...cultureItems.map(c => ({...c, type: 'culture'}))];
+    } else if (selectedCategory === 'places') {
+      return places.map(p => ({...p, type: 'place'}));
+    } else if (selectedCategory === 'culture') {
+      return cultureItems.map(c => ({...c, type: 'culture'}));
+    }
+    return [];
+  };
+
+  const filteredItems = getFilteredItems();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-            Достопримечательности
+            Достопримечательности, культура и традиции
           </h1>
           <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
           <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
-            Откройте знаменитые места и скрытые жемчужины Нижегородской области
+            Откройте знаменитые места, народные промыслы и культурное наследие Нижегородской области
           </p>
         </div>
         
@@ -485,113 +437,54 @@ const AttractionsPage = () => {
           ))}
         </div>
 
-        {/* Places Grid */}
+        {/* Items Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPlaces.map(place => (
-            <div key={place.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm overflow-hidden">
+          {filteredItems.map(item => (
+            <div key={item.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-105 backdrop-blur-sm overflow-hidden">
+              {item.image_url && (
+                <div className="h-48 overflow-hidden rounded-t-2xl">
+                  <img 
+                    src={item.image_url} 
+                    alt={item.name || item.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+              )}
               <div className="p-8">
                 <div className="flex items-center justify-between mb-4">
                   <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
                     <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
-                    {place.category === 'kremlin' ? 'Кремль' :
-                     place.category === 'museum' ? 'Музей' :
-                     place.category === 'nature' ? 'Природа' :
-                     place.category === 'architecture' ? 'Архитектура' :
-                     place.category === 'city' ? 'Город' : place.category}
+                    {item.type === 'place' 
+                      ? (item.category === 'kremlin' ? 'Кремль' :
+                         item.category === 'museum' ? 'Музей' :
+                         item.category === 'nature' ? 'Природа' :
+                         item.category === 'architecture' ? 'Архитектура' :
+                         item.category === 'monastery' ? 'Монастырь' :
+                         item.category === 'city' ? 'Город' : item.category)
+                      : (item.category === 'craft' ? 'Ремесло' :
+                         item.category === 'tradition' ? 'Традиция' :
+                         item.category === 'nature' ? 'Природа' : item.category)
+                    }
                   </span>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-orange-400 group-hover:text-orange-300 transition-colors">
-                  {place.name}
+                  {item.name || item.title}
                 </h3>
-                <p className="text-gray-300 mb-6 leading-relaxed">{place.description}</p>
-                <div className="text-sm text-gray-500 flex items-center">
-                  <span className="mr-2">📍</span>
-                  {place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredPlaces.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-xl">Места в данной категории будут добавлены в ближайшее время.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Events Page with dark theme
-const EventsPage = () => {
-  const [events, setEvents] = useState([]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
-    try {
-      const response = await axios.get(`${API}/events`);
-      setEvents(response.data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 py-12">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-            События и маршруты
-          </h1>
-          <div className="h-1 w-32 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto mb-6 rounded-full"></div>
-          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
-            Актуальные события и рекомендуемые туристические маршруты по области
-          </p>
-        </div>
-        
-        <div className="space-y-8">
-          {events.map(event => (
-            <div key={event.id} className="group bg-gray-800/40 rounded-2xl border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:transform hover:scale-[1.02] backdrop-blur-sm p-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center mb-3 space-x-3">
-                    <span className="inline-flex items-center px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">
-                      <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
-                      {event.category}
-                    </span>
-                    <span className="text-gray-400 text-sm flex items-center">
-                      <span className="mr-1">📅</span>
-                      {new Date(event.date).toLocaleDateString('ru-RU')}
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3 text-orange-400 group-hover:text-orange-300 transition-colors">
-                    {event.title}
-                  </h3>
-                  <p className="text-gray-300 mb-4 leading-relaxed">{event.description}</p>
+                <p className="text-gray-300 mb-6 leading-relaxed">{item.description}</p>
+                {item.latitude && item.longitude && (
                   <div className="text-sm text-gray-500 flex items-center">
                     <span className="mr-2">📍</span>
-                    {event.location}
+                    {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {events.length === 0 && (
+        {filteredItems.length === 0 && (
           <div className="text-center py-16">
-            <div className="bg-gray-800/40 rounded-2xl border border-orange-500/20 p-12 backdrop-blur-sm">
-              <div className="text-6xl mb-6">📅</div>
-              <h3 className="text-2xl font-bold mb-4 text-orange-400">События скоро появятся</h3>
-              <p className="text-gray-400 text-lg">
-                Мы работаем над наполнением календаря культурных событий и туристических маршрутов.
-                Следите за обновлениями!
-              </p>
-            </div>
+            <p className="text-gray-500 text-xl">Элементы в данной категории будут добавлены в ближайшее время.</p>
           </div>
         )}
       </div>
@@ -785,7 +678,7 @@ const AdminPage = () => {
       await axios.post(`${API}/init-data`, {}, {
         headers: { 'Authorization': `Basic ${auth}` }
       });
-      alert('Обновлённые данные успешно загружены!');
+      alert('Обновлённые данные с новыми городами успешно загружены!');
     } catch (error) {
       console.error('Error initializing data:', error);
       alert('Ошибка при инициализации данных');
@@ -882,8 +775,8 @@ const AdminPage = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-300">Инициализация данных</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  Загрузить обновлённые данные о достопримечательностях, истории и культуре 
-                  Нижегородской области на основе проверенной информации из Википедии.
+                  Загрузить обновлённые данные с исправленными датами истории (ВОВ 1941-1945, восстановление 1950-е) 
+                  и новыми городами: Дивеево, Городец, Арзамас, Семёнов, Выкса, Павлово, Балахна, Сергач.
                 </p>
                 <button
                   onClick={initializeData}
@@ -911,12 +804,14 @@ const AdminPage = () => {
           </div>
 
           <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl border border-orange-500/20 p-8">
-            <h2 className="text-2xl font-bold text-orange-400 mb-4">Информация о системе</h2>
+            <h2 className="text-2xl font-bold text-orange-400 mb-4">Последние обновления</h2>
             <div className="text-gray-300 space-y-2">
-              <p>• Тёмная тема с оранжевыми акцентами активна</p>
-              <p>• Интерактивная карта с OpenStreetMap (тёмная тема)</p>
-              <p>• База данных содержит достоверную информацию из Википедии</p>
-              <p>• Все секции сайта адаптированы под новый дизайн</p>
+              <p>✅ Исправлены даты: ВОВ 1941-1945, послевоенное развитие 1950-е</p>
+              <p>✅ Убран раздел "События и маршруты"</p>
+              <p>✅ Объединены "Культура" и "Достопримечательности"</p>
+              <p>✅ Добавлены новые города с фотографиями</p>
+              <p>✅ Красивые анимации развертывания плашек истории</p>
+              <p>✅ Интерактивная карта с тёмной темой</p>
             </div>
           </div>
         </div>
@@ -951,9 +846,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/history" element={<HistoryPage />} />
-          <Route path="/culture" element={<CulturePage />} />
           <Route path="/attractions" element={<AttractionsPage />} />
-          <Route path="/events" element={<EventsPage />} />
           <Route path="/contacts" element={<ContactPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
