@@ -11,6 +11,9 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
 import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,23 +40,19 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
     return credentials.username
 
 # Pydantic Models
-class Place(BaseModel):
+class City(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str
-    category: str  # kremlin, museum, nature, architecture, city, etc.
-    latitude: float
-    longitude: float
     image_url: Optional[str] = None
+    attractions: List[dict] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class PlaceCreate(BaseModel):
+class CityCreate(BaseModel):
     name: str
     description: str
-    category: str
-    latitude: float
-    longitude: float
     image_url: Optional[str] = None
+    attractions: List[dict] = []
 
 class HistoryEvent(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -73,7 +72,7 @@ class CultureItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str
-    category: str  # craft, cuisine, festival, tradition, nature
+    category: str  # craft, tradition, nature
     image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -103,25 +102,27 @@ def prepare_for_mongo(data):
                 data[key] = value.isoformat()
     return data
 
-# Places endpoints
-@api_router.get("/places", response_model=List[Place])
-async def get_places():
-    places = await db.places.find().to_list(length=None)
-    return [Place(**place) for place in places]
+# Email sending function
+async def send_email_notification(contact_data: ContactMessage):
+    try:
+        # This would be configured with actual email settings
+        # For now, just log the message
+        logging.info(f"Contact form submitted: {contact_data.name} ({contact_data.email}): {contact_data.message}")
+    except Exception as e:
+        logging.error(f"Failed to send email notification: {e}")
 
-@api_router.post("/places", response_model=Place)
-async def create_place(place_data: PlaceCreate, admin: str = Depends(verify_admin)):
-    place = Place(**place_data.dict())
-    place_dict = prepare_for_mongo(place.dict())
-    await db.places.insert_one(place_dict)
-    return place
+# Cities endpoints
+@api_router.get("/cities", response_model=List[City])
+async def get_cities():
+    cities = await db.cities.find().to_list(length=None)
+    return [City(**city) for city in cities]
 
-@api_router.delete("/places/{place_id}")
-async def delete_place(place_id: str, admin: str = Depends(verify_admin)):
-    result = await db.places.delete_one({"id": place_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Place not found")
-    return {"message": "Place deleted successfully"}
+@api_router.post("/cities", response_model=City)
+async def create_city(city_data: CityCreate, admin: str = Depends(verify_admin)):
+    city = City(**city_data.dict())
+    city_dict = prepare_for_mongo(city.dict())
+    await db.cities.insert_one(city_dict)
+    return city
 
 # History endpoints
 @api_router.get("/history", response_model=List[HistoryEvent])
@@ -147,7 +148,7 @@ async def create_history_event(event_data: HistoryEventCreate, admin: str = Depe
     await db.history_events.insert_one(event_dict)
     return event
 
-# Culture endpoints (now combined with attractions)
+# Culture endpoints
 @api_router.get("/culture", response_model=List[CultureItem])
 async def get_culture():
     items = await db.culture_items.find().to_list(length=None)
@@ -166,6 +167,10 @@ async def create_contact_message(message_data: ContactMessageCreate):
     message = ContactMessage(**message_data.dict())
     message_dict = prepare_for_mongo(message.dict())
     await db.contact_messages.insert_one(message_dict)
+    
+    # Send email notification (to adk700@yandex.ru but not displayed on frontend)
+    await send_email_notification(message)
+    
     return message
 
 @api_router.get("/contact", response_model=List[ContactMessage])
@@ -176,7 +181,7 @@ async def get_contact_messages(admin: str = Depends(verify_admin)):
 # Clear all data endpoint
 @api_router.post("/clear-data")
 async def clear_all_data(admin: str = Depends(verify_admin)):
-    await db.places.delete_many({})
+    await db.cities.delete_many({})
     await db.history_events.delete_many({})
     await db.culture_items.delete_many({})
     return {"message": "All data cleared successfully"}
@@ -185,144 +190,155 @@ async def clear_all_data(admin: str = Depends(verify_admin)):
 @api_router.post("/init-data")
 async def init_sample_data(admin: str = Depends(verify_admin)):
     # Clear existing data first
-    await db.places.delete_many({})
+    await db.cities.delete_many({})
     await db.history_events.delete_many({})
     await db.culture_items.delete_many({})
     
-    # Updated places data with all new cities and attractions
-    sample_places = [
-        # Нижний Новгород
+    # Cities with attractions
+    sample_cities = [
         {
-            "name": "Нижегородский кремль",
-            "description": "Центральная крепость города с башнями, стенами и историческими залами; один из символов Нижнего Новгорода.",
-            "category": "kremlin",
-            "latitude": 56.3287,
-            "longitude": 44.0020,
-            "image_url": "https://customer-assets.emergentagent.com/job_nizhny-guide/artifacts/5sp4c3ls_%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5.png"
+            "name": "Нижний Новгород",
+            "description": "Административный центр области, город с богатой историей у слияния Волги и Оки",
+            "image_url": "https://images.unsplash.com/photo-1666375786533-3eff441179e0",
+            "attractions": [
+                {
+                    "name": "Нижегородский кремль",
+                    "description": "Центральная крепость города с башнями, стенами и историческими залами; один из символов Нижнего Новгорода.",
+                    "image_url": "https://images.unsplash.com/photo-1666375341472-ecbeaad2457b"
+                },
+                {
+                    "name": "Чкаловская лестница",
+                    "description": "Популярные прогулочные зоны с видами на реку и город. Набережные Оки и Волги создают неповторимую атмосферу.",
+                    "image_url": "https://images.unsplash.com/photo-1666375704352-18561abe7ac2"
+                },
+                {
+                    "name": "Большая Покровская улица",
+                    "description": "Старый центр с улицами Большая Покровская, Рождественская, древние гильдейские и купеческие дома создают историческую атмосферу."
+                },
+                {
+                    "name": "Музей истории художественных промыслов",
+                    "description": "Городской исторический музей, художественные галереи, музей народных промыслов — позволяют глубже узнать прошлое города."
+                }
+            ]
         },
         {
-            "name": "Чкаловская лестница",
-            "description": "Популярные прогулочные зоны с видами на реку и город. Набережные Оки и Волги создают неповторимую атмосферу.",
-            "category": "architecture",
-            "latitude": 56.3226,
-            "longitude": 43.9853
+            "name": "Дивеево",
+            "description": "Духовный центр православия с Серафимо-Дивеевским монастырем",
+            "image_url": "https://images.unsplash.com/photo-1666375874745-b13060b8b890",
+            "attractions": [
+                {
+                    "name": "Свято-Троицкий Серафимо-Дивеевский монастырь",
+                    "description": "Один из крупнейших православных паломнических центров России. В Троицком соборе монастыря покоятся мощи преподобного Серафима Саровского.",
+                    "image_url": "https://customer-assets.emergentagent.com/job_nizhny-guide/artifacts/3c3ycajs_%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5.png"
+                },
+                {
+                    "name": "Святая Канавка",
+                    "description": "Особый ритуальный путь, который обходит вокруг обители, символически замыкая «удел Богородицы»."
+                }
+            ]
         },
         {
-            "name": "Большая Покровская улица",
-            "description": "Старый центр с улицами Большая Покровская, Рождественская, древние гильдейские и купеческие дома создают историческую атмосферу.",
-            "category": "architecture",
-            "latitude": 56.3264,
-            "longitude": 44.0075
+            "name": "Городец",
+            "description": "Древний город, центр городецкой росписи и народных промыслов",
+            "image_url": "https://images.unsplash.com/photo-1751311756590-64688d5b07d2",
+            "attractions": [
+                {
+                    "name": "Музеи народного творчества",
+                    "description": "Известен как один из центров городецкой росписи, с множеством мастерских и музеев народного творчества."
+                },
+                {
+                    "name": "Набережная Волги",
+                    "description": "Набережная и виды с реки Волги и Оки придают Городцу архитектурно-пейзажную привлекательность."
+                }
+            ]
         },
         {
-            "name": "Музей истории художественных промыслов",
-            "description": "Городской исторический музей, художественные галереи, музей народных промыслов — позволяют глубже узнать прошлое города.",
-            "category": "museum",
-            "latitude": 56.3269,
-            "longitude": 44.0051
-        },
-        
-        # Дивеево
-        {
-            "name": "Свято-Троицкий Серафимо-Дивеевский монастырь",
-            "description": "Один из крупнейших православных паломнических центров России. В Троицком соборе монастыря покоятся мощи преподобного Серафима Саровского.",
-            "category": "monastery",
-            "latitude": 55.0442,
-            "longitude": 43.2394,
-            "image_url": "https://customer-assets.emergentagent.com/job_nizhny-guide/artifacts/3c3ycajs_%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5.png"
-        },
-        {
-            "name": "Святая Канавка",
-            "description": "Особый ритуальный путь, который обходит вокруг обители, символически замыкая «удел Богородицы».",
-            "category": "monastery",
-            "latitude": 55.0445,
-            "longitude": 43.2390
-        },
-        
-        # Городец
-        {
-            "name": "Городец - центр народных промыслов",
-            "description": "Известен как один из центров городецкой росписи, с множеством мастерских и музеев народного творчества.",
-            "category": "city",
-            "latitude": 56.6431,
-            "longitude": 43.4707
-        },
-        
-        # Арзамас
-        {
-            "name": "Воскресенский собор в Арзамасе",
-            "description": "Крупная доминанта города, возведённая в классическом стиле. Дом Ханыкова — образец деревянного классицизма.",
-            "category": "architecture",
-            "latitude": 55.3944,
-            "longitude": 43.8406
+            "name": "Арзамас",
+            "description": "Исторический город с классической архитектурой",
+            "image_url": "https://images.unsplash.com/photo-1746531431171-f5c2c07f9eb1",
+            "attractions": [
+                {
+                    "name": "Воскресенский собор",
+                    "description": "Крупная доминанта города, возведённая в классическом стиле."
+                },
+                {
+                    "name": "Дом Ханыкова",
+                    "description": "Образец деревянного классицизма, одна из ценных архитектурных жемчужин старого Арзамаса."
+                },
+                {
+                    "name": "Пустынские озёра",
+                    "description": "Природная зона отдыха с живописными водными пейзажами."
+                }
+            ]
         },
         {
-            "name": "Пустынские озёра",
-            "description": "Природная зона отдыха вокруг Арзамаса с живописными водными пейзажами.",
-            "category": "nature",
-            "latitude": 55.4000,
-            "longitude": 43.8500
-        },
-        
-        # Семёнов
-        {
-            "name": "Музей «Золотая Хохлома»",
-            "description": "Центр художественных промыслов, демонстрирует технологии создания знаменитой хохломской росписи и народные промыслы.",
-            "category": "museum",
-            "latitude": 56.7833,
-            "longitude": 44.5000
-        },
-        
-        # Выкса
-        {
-            "name": "Дом Баташевых в Выксе",
-            "description": "Усадьба семьи промышленников, связанная с историей металлургического завода. Шуховская водонапорная башня — символ инженерной истории.",
-            "category": "architecture",
-            "latitude": 55.3167,
-            "longitude": 42.1833
-        },
-        
-        # Павлово
-        {
-            "name": "Павловский музей ножей и замков",
-            "description": "Город мастеров металлопродукции. Музей представляет образцы металлического искусства местных кустарных промыслов.",
-            "category": "museum",
-            "latitude": 55.9667,
-            "longitude": 43.0833
+            "name": "Семёнов",
+            "description": "Столица русской матрёшки и народных промыслов",
+            "image_url": "https://images.pexels.com/photos/12003131/pexels-photo-12003131.jpeg",
+            "attractions": [
+                {
+                    "name": "Музей «Золотая Хохлома»",
+                    "description": "Демонстрирует технологии создания знаменитой хохломской росписи и народные промыслы."
+                },
+                {
+                    "name": "Семёновский историко-художественный музей",
+                    "description": "Расположен в доме купца П. П. Шарыгина, где собраны образцы народного искусства региона."
+                }
+            ]
         },
         {
-            "name": "Парк «Дальняя Круча»",
-            "description": "Один из старейших ландшафтных парков Павлова с аллеями, клумбами, прогулочными дорожками вдоль Оки.",
-            "category": "nature",
-            "latitude": 55.9650,
-            "longitude": 43.0800
+            "name": "Выкса",
+            "description": "Промышленный город с богатой металлургической историей",
+            "image_url": "https://images.pexels.com/photos/34247673/pexels-photo-34247673.jpeg",
+            "attractions": [
+                {
+                    "name": "Дом Баташевых",
+                    "description": "Усадьба семьи промышленников, связанная с историей металлургического завода."
+                },
+                {
+                    "name": "Шуховская водонапорная башня",
+                    "description": "Промышленный памятник и символ инженерной истории Выксы."
+                }
+            ]
         },
-        
-        # Балахна
         {
-            "name": "Никольская церковь в Балахне",
-            "description": "Старинный город на Волге с сохранившимися памятниками церковного зодчества XVII–XIX веков.",
-            "category": "architecture",
-            "latitude": 56.5000,
-            "longitude": 43.6000
+            "name": "Павлово",
+            "description": "Город мастеров металлопродукции на берегу Оки",
+            "image_url": "https://images.unsplash.com/photo-1666375704352-18561abe7ac2",
+            "attractions": [
+                {
+                    "name": "Павловский музей ножей и замков",
+                    "description": "Музей представляет образцы металлического искусства местных кустарных промыслов."
+                },
+                {
+                    "name": "Парк «Дальняя Круча»",
+                    "description": "Один из старейших ландшафтных парков Павлова с аллеями, клумбами, прогулочными дорожками вдоль Оки."
+                }
+            ]
         },
-        
-        # Сергач
         {
-            "name": "Сергачский краеведческий музей",
-            "description": "Знакомит с историей региона, народными промыслами и природой. Сохранились купеческие дома XIX–XX веков.",
-            "category": "museum",
-            "latitude": 55.5333,
-            "longitude": 45.4667
+            "name": "Балахна",
+            "description": "Старинный город на Волге с памятниками церковного зодчества",
+            "image_url": "https://images.unsplash.com/photo-1666375874745-b13060b8b890",
+            "attractions": [
+                {
+                    "name": "Никольская церковь",
+                    "description": "Один из древнейших архитектурных памятников города XVII–XIX веков."
+                },
+                {
+                    "name": "Традиции ткачества",
+                    "description": "Город известен своими традициями ткачества, кружев и ремёсел."
+                }
+            ]
         }
     ]
     
-    for place_data in sample_places:
-        place = Place(**place_data)
-        place_dict = prepare_for_mongo(place.dict())
-        await db.places.insert_one(place_dict)
+    for city_data in sample_cities:
+        city = City(**city_data)
+        city_dict = prepare_for_mongo(city.dict())
+        await db.cities.insert_one(city_dict)
     
-    # Updated historical events with corrected dates
+    # Historical events (same as before with corrected dates)
     sample_history = [
         {
             "title": "Основание Нижнего Новгорода",
@@ -436,7 +452,7 @@ async def init_sample_data(admin: str = Depends(verify_admin)):
         event_dict = prepare_for_mongo(event.dict())
         await db.history_events.insert_one(event_dict)
     
-    # Updated culture items combined with nature attractions
+    # Culture items
     sample_culture = [
         {
             "title": "Хохломская роспись",
@@ -475,7 +491,7 @@ async def init_sample_data(admin: str = Depends(verify_admin)):
         item_dict = prepare_for_mongo(item.dict())
         await db.culture_items.insert_one(item_dict)
     
-    return {"message": "Updated sample data with new cities and attractions initialized successfully"}
+    return {"message": "Updated sample data with cities structure initialized successfully"}
 
 # Include the router in the main app
 app.include_router(api_router)
